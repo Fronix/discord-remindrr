@@ -22,6 +22,7 @@ import {
 import { computeNextRun } from "../recurrence/engine";
 import type {
 	RecurrenceMonthlyLast,
+	RecurrenceMonthlyLastDays,
 	RecurrenceMonthlyNth,
 	RecurrenceWeekly,
 } from "../types";
@@ -143,7 +144,10 @@ export async function handleCreateButton(i: ButtonInteraction): Promise<void> {
 		await i.reply(ephemeral("Please select a schedule type (step 1)."));
 		return;
 	}
-	if (!weekdays || weekdays.length === 0) {
+	if (
+		scheduleType !== "monthly_last_days" &&
+		(!weekdays || weekdays.length === 0)
+	) {
 		await i.reply(ephemeral("Please select at least one weekday (step 2)."));
 		return;
 	}
@@ -203,11 +207,11 @@ export async function handleCreateButton(i: ButtonInteraction): Promise<void> {
 		return;
 	}
 
-	if (scheduleType === "weekly") {
+	if (scheduleType === "weekly" && weekdays) {
 		const recurrence: RecurrenceWeekly = {
 			type: "weekly",
 			interval_weeks: state.interval ?? 1,
-			weekdays,
+			weekdays: weekdays,
 			time_local,
 		};
 		const nextRunUtc = computeNextRun(
@@ -246,7 +250,7 @@ export async function handleCreateButton(i: ButtonInteraction): Promise<void> {
 			);
 			return;
 		}
-		if (weekdays.length !== 1) {
+		if (weekdays?.length !== 1) {
 			await i.reply(
 				ephemeral("Please select exactly one weekday for a monthly schedule."),
 			);
@@ -288,7 +292,7 @@ export async function handleCreateButton(i: ButtonInteraction): Promise<void> {
 	}
 
 	if (scheduleType === "monthly_last") {
-		if (weekdays.length !== 1) {
+		if (weekdays?.length !== 1) {
 			await i.reply(
 				ephemeral("Please select exactly one weekday for a monthly schedule."),
 			);
@@ -299,6 +303,40 @@ export async function handleCreateButton(i: ButtonInteraction): Promise<void> {
 			mode: "last_week",
 			interval_months: 1,
 			weekday: weekdays[0],
+			time_local,
+		};
+		const nextRunUtc = computeNextRun(
+			DateTime.utc(),
+			recurrence,
+			state.timezone,
+		);
+		const nextRunIso = nextRunUtc.toISO();
+		if (!nextRunIso) {
+			await i.reply(
+				ephemeral("Could not compute next run time. Please try again."),
+			);
+			return;
+		}
+		const reminder = createRecurringReminder({
+			...common,
+			recurrence,
+			next_run_at_utc: nextRunIso,
+		});
+		clearState(sid);
+		await i.update({ content: "✅ Reminder created!", components: [] });
+		const confirmMsg = await i.followUp({
+			embeds: [buildConfirmationEmbed(reminder)],
+			components: [buildCancelButton(reminder.id)],
+		});
+		setConfirmationMessageId(reminder.id, confirmMsg.id);
+		return;
+	}
+
+	if (scheduleType === "monthly_last_days") {
+		const recurrence: RecurrenceMonthlyLastDays = {
+			type: "monthly",
+			mode: "last_days",
+			interval_months: 1,
 			time_local,
 		};
 		const nextRunUtc = computeNextRun(

@@ -24,10 +24,18 @@ export interface RecurrenceMonthlyLast {
 	time_local: string;
 }
 
+export interface RecurrenceMonthlyLastDays {
+	type: "monthly";
+	mode: "last_days";
+	interval_months: 1;
+	time_local: string;
+}
+
 export type Recurrence =
 	| RecurrenceWeekly
 	| RecurrenceMonthlyNth
-	| RecurrenceMonthlyLast;
+	| RecurrenceMonthlyLast
+	| RecurrenceMonthlyLastDays;
 
 export interface Reminder {
 	id: number;

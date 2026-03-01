@@ -64,6 +64,10 @@ function buildScheduleTypeRow(sid: string) {
 					.setLabel("Monthly – last weekday")
 					.setDescription("E.g. last Friday of every month")
 					.setValue("monthly_last"),
+				new StringSelectMenuOptionBuilder()
+					.setLabel("Monthly – last 3 days")
+					.setDescription("Every day during the last 3 days of each month")
+					.setValue("monthly_last_days"),
 			),
 	);
 }

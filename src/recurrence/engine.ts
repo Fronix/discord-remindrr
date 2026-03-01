@@ -2,6 +2,7 @@ import { DateTime } from "luxon";
 import type {
 	Recurrence,
 	RecurrenceMonthlyLast,
+	RecurrenceMonthlyLastDays,
 	RecurrenceMonthlyNth,
 	RecurrenceWeekly,
 } from "../types";
@@ -43,6 +44,9 @@ export function computeNextRun(
 		case "weekly":
 			return computeNextWeekly(afterUtc, recurrence, timezone);
 		case "monthly":
+			if (recurrence.mode === "last_days") {
+				return computeNextMonthlyLastDays(afterUtc, recurrence, timezone);
+			}
 			return computeNextMonthly(afterUtc, recurrence, timezone);
 	}
 }
@@ -155,6 +159,39 @@ function getLastWeekdayOfMonth(
 	return d;
 }
 
+// ── Monthly last days ───────────────────────────────────────────────────────
+
+function computeNextMonthlyLastDays(
+	afterUtc: DateTime,
+	rec: RecurrenceMonthlyLastDays,
+	timezone: string,
+): DateTime {
+	const afterLocal = afterUtc.setZone(timezone);
+
+	for (let offset = 0; offset <= 24; offset++) {
+		const monthEnd = afterLocal
+			.plus({ months: offset })
+			.endOf("month")
+			.startOf("day");
+		const lastThree = [
+			monthEnd.minus({ days: 2 }),
+			monthEnd.minus({ days: 1 }),
+			monthEnd,
+		];
+
+		for (const day of lastThree) {
+			const candidate = applyTime(day, rec.time_local);
+			if (candidate > afterLocal) {
+				return candidate.toUTC();
+			}
+		}
+	}
+
+	throw new Error(
+		"computeNextMonthlyLastDays: could not find next run within 24 months",
+	);
+}
+
 // ── Formatting ─────────────────────────────────────────────────────────────
 
 /** Returns a human-readable description of the recurrence rule. */
@@ -176,6 +213,10 @@ export function describeRecurrence(rec: Recurrence): string {
 				? "Every month"
 				: `Every ${rec.interval_months} months`;
 		return `${every} on the ${ord} ${rec.weekday} at ${rec.time_local}`;
+	}
+
+	if (rec.mode === "last_days") {
+		return `Every month on the last 3 days at ${rec.time_local}`;
 	}
 
 	// last_week
