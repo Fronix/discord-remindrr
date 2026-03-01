@@ -108,3 +108,18 @@ Or to run directly without compiling first (development):
 ```sh
 pnpm dev
 ```
+
+## Development
+
+### Running tests
+
+```sh
+pnpm test           # run all tests once
+pnpm test:watch     # re-run on file changes
+```
+
+The test suite uses [Vitest](https://vitest.dev/) and covers the recurrence engine, input validators, session state, and the SQLite CRUD layer. No Discord credentials are needed to run tests.
+
+### Contributing
+
+This repository requires all changes to go through a pull request
