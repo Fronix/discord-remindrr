@@ -11,5 +11,14 @@ services:
     volumes:
       - reminder_data:/data
 
+  deploy-commands:
+    build: .
+    restart: "no"
+    entrypoint: ["node", "dist/bot/deploy.js"]
+    environment:
+      DISCORD_TOKEN: ${DISCORD_TOKEN}
+      DISCORD_CLIENT_ID: ${DISCORD_CLIENT_ID}
+      DISCORD_GUILD_ID: ${DISCORD_GUILD_ID:-}
+
 volumes:
   reminder_data:

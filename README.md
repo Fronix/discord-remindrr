@@ -64,17 +64,21 @@ ALLOW_EVERYONE_MENTIONS=false         # Whether @everyone/@here are allowed in r
 
 ### 4. Deploy slash commands
 
-Register the `/remind` command with Discord (run once, or after command changes):
+Register the `/remind` command with Discord (run once, or after command changes).
+
+With Docker:
 
 ```sh
-DISCORD_CLIENT_ID=your_client_id pnpm run deploy-commands
+docker compose run --rm deploy-commands
 ```
 
-To register to a specific guild only (instant, good for testing):
+Without Docker:
 
 ```sh
-DISCORD_CLIENT_ID=your_client_id DISCORD_GUILD_ID=your_guild_id pnpm run deploy-commands
+pnpm run deploy-commands
 ```
+
+Set `DISCORD_GUILD_ID` in your `.env` to register commands to a specific guild only (instant, good for testing). Without it, commands are registered globally (may take up to an hour to propagate).
 
 ### 5. Run with Docker (recommended)
 
