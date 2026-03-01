@@ -1,0 +1,15 @@
+services:
+  bot:
+    build: .
+    restart: unless-stopped
+    environment:
+      DISCORD_TOKEN: ${DISCORD_TOKEN}
+      SQLITE_PATH: /data/reminders.db
+      DEFAULT_TIMEZONE: ${DEFAULT_TIMEZONE:-UTC}
+      WORKER_INTERVAL_SECONDS: ${WORKER_INTERVAL_SECONDS:-30}
+      ALLOW_EVERYONE_MENTIONS: ${ALLOW_EVERYONE_MENTIONS:-false}
+    volumes:
+      - reminder_data:/data
+
+volumes:
+  reminder_data:
