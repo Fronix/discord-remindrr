@@ -23,6 +23,8 @@ const commands = [
 	new SlashCommandBuilder()
 		.setName("remind")
 		.setDescription("Schedule a reminder message in this channel")
+		.setDefaultMemberPermissions(0n)
+		.setDMPermission(false)
 		.addStringOption((o) =>
 			o
 				.setName("message")
