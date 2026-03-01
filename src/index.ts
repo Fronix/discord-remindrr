@@ -2,6 +2,7 @@ import "dotenv/config"; // no-op if dotenv isn't installed; env is set via Docke
 import { createClient } from "./bot/client";
 import { config } from "./config";
 import { closeDb, getDb } from "./db/database";
+import { startHealthServer } from "./health";
 import { purgeExpired } from "./interactions/state";
 import { startWorker } from "./scheduler/worker";
 
@@ -24,11 +25,14 @@ async function main(): Promise<void> {
 	// Purge expired in-memory flow states every 5 minutes
 	const purgeTimer = setInterval(purgeExpired, 5 * 60 * 1000);
 
+	const healthServer = startHealthServer();
+
 	// ── Graceful shutdown ──────────────────────────────────────────────────
 	const shutdown = async (signal: string): Promise<void> => {
 		console.log(`\n[shutdown] Received ${signal}, shutting down…`);
 		clearInterval(workerTimer);
 		clearInterval(purgeTimer);
+		healthServer.close();
 		client.destroy();
 		closeDb();
 		console.log("[shutdown] Done.");

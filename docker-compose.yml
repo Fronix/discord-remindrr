@@ -11,6 +11,9 @@ services:
       DEPLOY_COMMANDS: ${DEPLOY_COMMANDS:-false}
       DISCORD_CLIENT_ID: ${DISCORD_CLIENT_ID:-}
       DISCORD_GUILD_ID: ${DISCORD_GUILD_ID:-}
+      HEALTH_PORT: ${HEALTH_PORT:-3000}
+    ports:
+      - "${HEALTH_PORT:-3000}:${HEALTH_PORT:-3000}"
     volumes:
       - reminder_data:/data
 

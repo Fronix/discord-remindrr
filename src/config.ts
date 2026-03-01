@@ -35,4 +35,5 @@ export const config = {
 	WORKER_INTERVAL_SECONDS: optionalInt("WORKER_INTERVAL_SECONDS", 30),
 	ALLOW_EVERYONE_MENTIONS:
 		optional("ALLOW_EVERYONE_MENTIONS", "false").toLowerCase() === "true",
+	HEALTH_PORT: optionalInt("HEALTH_PORT", 3000),
 } as const;

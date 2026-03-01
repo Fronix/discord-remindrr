@@ -9,6 +9,7 @@
  * when status = 'scheduled'), so a crash-and-restart cannot send duplicates.
  */
 
+import { writeFileSync } from "node:fs";
 import {
 	AllowedMentionsTypes,
 	type Client,
@@ -43,6 +44,7 @@ async function tick(client: Client): Promise<void> {
 	try {
 		await processOneTime(client);
 		await processRecurring(client);
+		writeFileSync("/tmp/health", "");
 	} catch (err) {
 		console.error("[worker] Tick error:", err);
 	}
