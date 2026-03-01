@@ -29,6 +29,8 @@ WORKDIR /app
 COPY --from=builder /app/dist        ./dist
 COPY --from=builder /app/node_modules ./node_modules
 COPY package.json ./
+COPY entrypoint.sh ./entrypoint.sh
+RUN chmod +x entrypoint.sh
 
 # Database lives on a named volume
 VOLUME ["/data"]
@@ -36,4 +38,4 @@ VOLUME ["/data"]
 ENV NODE_ENV=production \
     SQLITE_PATH=/data/reminders.db
 
-ENTRYPOINT ["node", "dist/index.js"]
+ENTRYPOINT ["sh", "entrypoint.sh"]

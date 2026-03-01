@@ -88,6 +88,13 @@ docker compose up -d
 
 Data is persisted in a named Docker volume (`reminder_data`).
 
+### Deploying on Coolify
+
+1. Create a new resource using the **Docker Compose** build pack and point it at this repo.
+2. Add all variables from `.env.example` via the Coolify environment variables UI.
+3. Set `DEPLOY_COMMANDS=true` on the first deploy — the bot will register slash commands automatically before starting.
+4. After the first successful deploy, set `DEPLOY_COMMANDS=false` (or leave it `true`, registration is idempotent and fast).
+
 ### Run without Docker
 
 ```sh
