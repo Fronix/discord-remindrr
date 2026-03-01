@@ -8,6 +8,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 RUN corepack enable && corepack prepare pnpm@10.11.0 --activate
 
+ENV CI=true
+
 WORKDIR /app
 
 COPY package.json pnpm-lock.yaml ./
@@ -19,7 +21,7 @@ COPY src ./src
 RUN pnpm run build
 
 # Prune dev dependencies
-RUN pnpm prune --prod
+RUN pnpm prune --prod --ignore-scripts
 
 # ── Runtime stage ──────────────────────────────────────────────────────────
 FROM node:24-slim AS runtime
