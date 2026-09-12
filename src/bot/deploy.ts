@@ -63,6 +63,46 @@ const commands = [
 				.setMaxValue(4),
 		)
 		.toJSON(),
+
+	new SlashCommandBuilder()
+		.setName("reminders")
+		.setDescription("List reminders scheduled in this server")
+		.setDefaultMemberPermissions(0n)
+		.setDMPermission(false)
+		.addStringOption((o) =>
+			o
+				.setName("scope")
+				.setDescription("Whose reminders to list (default: everyone's)")
+				.addChoices(
+					{ name: "Everyone", value: "all" },
+					{ name: "Only mine", value: "mine" },
+				),
+		)
+		.addStringOption((o) =>
+			o
+				.setName("status")
+				.setDescription("Which reminders to include (default: active only)")
+				.addChoices(
+					{ name: "Active only", value: "active" },
+					{ name: "All statuses", value: "all" },
+				),
+		)
+		.toJSON(),
+
+	new SlashCommandBuilder()
+		.setName("remind-delete")
+		.setDescription("Permanently delete a reminder by ID")
+		.setDefaultMemberPermissions(0n)
+		.setDMPermission(false)
+		.addIntegerOption((o) =>
+			o
+				.setName("id")
+				.setDescription("The reminder to delete (see /reminders)")
+				.setRequired(true)
+				.setMinValue(1)
+				.setAutocomplete(true),
+		)
+		.toJSON(),
 ];
 
 const rest = new REST().setToken(token);

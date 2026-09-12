@@ -207,3 +207,58 @@ export function cancel(id: number, requestingUserId: string): boolean {
 		.run(now(), id, requestingUserId);
 	return info.changes === 1;
 }
+
+// ── List ───────────────────────────────────────────────────────────────────
+
+export interface ListParams {
+	guild_id: string;
+	/** Only reminders created by this user */
+	creator_user_id?: string;
+	/** Restrict to a single status; omit for every status */
+	status?: ReminderStatus;
+	limit?: number;
+}
+
+/**
+ * Lists reminders in a guild, soonest first.
+ * One-time and recurring rows are ordered together on their next fire time.
+ */
+export function listByGuild(p: ListParams): Reminder[] {
+	const db = getDb();
+	const where = ["guild_id = ?"];
+	const args: unknown[] = [p.guild_id];
+
+	if (p.creator_user_id) {
+		where.push("creator_user_id = ?");
+		args.push(p.creator_user_id);
+	}
+	if (p.status) {
+		where.push("status = ?");
+		args.push(p.status);
+	}
+	args.push(p.limit ?? 100);
+
+	const rows = db
+		.prepare(`
+    SELECT * FROM reminders
+    WHERE ${where.join(" AND ")}
+    ORDER BY COALESCE(next_run_at_utc, scheduled_at_utc) ASC, id ASC
+    LIMIT ?
+  `)
+		.all(...args) as Record<string, unknown>[];
+	return rows.map(rowToReminder);
+}
+
+// ── Delete ─────────────────────────────────────────────────────────────────
+
+/**
+ * Permanently removes a reminder. Guild-scoped so an ID from one server can
+ * never touch another server's rows. Returns false if nothing matched.
+ */
+export function remove(id: number, guildId: string): boolean {
+	const db = getDb();
+	const info = db
+		.prepare("DELETE FROM reminders WHERE id = ? AND guild_id = ?")
+		.run(id, guildId);
+	return info.changes === 1;
+}

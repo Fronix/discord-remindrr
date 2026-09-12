@@ -1,5 +1,10 @@
 import { Client, Events, GatewayIntentBits, MessageFlags } from "discord.js";
 import {
+	handleDeleteAutocomplete,
+	handleDeleteCommand,
+} from "../commands/delete";
+import { handleListCommand } from "../commands/list";
+import {
 	handleRemindAutocomplete,
 	handleRemindCommand,
 } from "../commands/remind";
@@ -19,10 +24,16 @@ export function createClient(): Client {
 			if (interaction.isChatInputCommand()) {
 				if (interaction.commandName === "remind") {
 					await handleRemindCommand(interaction);
+				} else if (interaction.commandName === "reminders") {
+					await handleListCommand(interaction);
+				} else if (interaction.commandName === "remind-delete") {
+					await handleDeleteCommand(interaction);
 				}
 			} else if (interaction.isAutocomplete()) {
 				if (interaction.commandName === "remind") {
 					await handleRemindAutocomplete(interaction);
+				} else if (interaction.commandName === "remind-delete") {
+					await handleDeleteAutocomplete(interaction);
 				}
 			} else if (interaction.isStringSelectMenu()) {
 				await routeSelectMenu(interaction);
