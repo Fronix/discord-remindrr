@@ -188,3 +188,85 @@ export function buildCancelledEmbed(reminder: Reminder): EmbedBuilder {
 			{ name: "ID", value: String(reminder.id), inline: true },
 		);
 }
+
+// ── Reminder list embed ────────────────────────────────────────────────────
+
+const STATUS_ICON: Record<string, string> = {
+	scheduled: "🟢",
+	sent: "✅",
+	cancelled: "🚫",
+	failed: "⚠️",
+};
+
+/** Short one-line schedule summary used by the list and delete commands. */
+export function describeSchedule(reminder: Reminder): string {
+	return reminder.is_repeating
+		? describeRecurrence(reminder.recurrence as Recurrence)
+		: describeOneTime(reminder.scheduled_at_utc ?? "", reminder.timezone);
+}
+
+/** Next (or final) fire time rendered in the reminder's own timezone. */
+export function formatNextRun(reminder: Reminder): string {
+	const iso = reminder.next_run_at_utc ?? reminder.scheduled_at_utc;
+	if (!iso) return "—";
+	const local = DateTime.fromISO(iso, { zone: "utc" }).setZone(
+		reminder.timezone,
+	);
+	if (!local.isValid) return "—";
+	return local.toFormat("cccc, LLLL d yyyy, HH:mm (ZZZZ)");
+}
+
+function truncate(text: string, max: number): string {
+	const flat = text.replace(/\s+/g, " ").trim();
+	return flat.length > max ? `${flat.slice(0, max - 1)}…` : flat;
+}
+
+/**
+ * Renders a page of reminders as a single embed.
+ * `total` is the unpaged count so the footer can report what was left out.
+ */
+export function buildReminderListEmbed(
+	reminders: Reminder[],
+	opts: { scopeLabel: string; total: number },
+): EmbedBuilder {
+	const embed = new EmbedBuilder()
+		.setColor(0x5865f2)
+		.setTitle(`Reminders — ${opts.scopeLabel}`);
+
+	if (reminders.length === 0) {
+		embed.setDescription("No reminders found.");
+		return embed;
+	}
+
+	const lines = reminders.map((r) => {
+		const icon = STATUS_ICON[r.status] ?? "•";
+		const head = `${icon} **#${r.id}** — ${truncate(r.message_text, 80)}`;
+		const when =
+			r.status === "scheduled"
+				? `Next: ${formatNextRun(r)}`
+				: `Status: ${r.status}`;
+		return `${head}\n<#${r.channel_id}> · <@${r.creator_user_id}>\n${describeSchedule(r)}\n${when}`;
+	});
+
+	embed.setDescription(lines.join("\n\n"));
+	embed.setFooter({
+		text:
+			reminders.length < opts.total
+				? `Showing ${reminders.length} of ${opts.total} · delete one with /remind-delete`
+				: `${reminders.length} reminder(s) · delete one with /remind-delete`,
+	});
+	return embed;
+}
+
+// ── Deleted embed ──────────────────────────────────────────────────────────
+
+export function buildDeletedEmbed(reminder: Reminder): EmbedBuilder {
+	return new EmbedBuilder()
+		.setColor(0xed4245)
+		.setTitle("Reminder deleted")
+		.addFields(
+			{ name: "Message", value: truncate(reminder.message_text, 1000) },
+			{ name: "Schedule", value: describeSchedule(reminder) },
+			{ name: "ID", value: String(reminder.id), inline: true },
+		);
+}
