@@ -22,8 +22,10 @@ import {
 	getById,
 	getDueOneTime,
 	getDueRecurring,
+	listByGuild,
 	markFailed,
 	markSent,
+	remove,
 	setConfirmationMessageId,
 } from "../src/db/reminders";
 import type { RecurrenceWeekly } from "../src/types";
@@ -273,6 +275,104 @@ describe("cancel", () => {
 		const r = createOneTimeReminder({ ...BASE, scheduled_at_utc: PAST });
 		cancel(r.id, BASE.creator_user_id);
 		expect(getDueOneTime(0)).toHaveLength(0);
+	});
+});
+
+// ── listByGuild ───────────────────────────────────────────────────────────────
+
+describe("listByGuild", () => {
+	it("returns only reminders from the requested guild", () => {
+		const mine = createOneTimeReminder({ ...BASE, scheduled_at_utc: FUTURE });
+		createOneTimeReminder({
+			...BASE,
+			guild_id: "g2",
+			scheduled_at_utc: FUTURE,
+		});
+
+		const rows = listByGuild({ guild_id: "g1" });
+		expect(rows).toHaveLength(1);
+		expect(rows[0].id).toBe(mine.id);
+	});
+
+	it("orders one-time and recurring reminders together by next fire time", () => {
+		const later = createOneTimeReminder({
+			...BASE,
+			scheduled_at_utc: NEXT_FUTURE,
+		});
+		const sooner = createRecurringReminder({
+			...BASE,
+			recurrence: WEEKLY_REC,
+			next_run_at_utc: FUTURE,
+		});
+
+		expect(listByGuild({ guild_id: "g1" }).map((r) => r.id)).toEqual([
+			sooner.id,
+			later.id,
+		]);
+	});
+
+	it("filters by creator", () => {
+		const mine = createOneTimeReminder({ ...BASE, scheduled_at_utc: FUTURE });
+		createOneTimeReminder({
+			...BASE,
+			creator_user_id: "u2",
+			scheduled_at_utc: FUTURE,
+		});
+
+		const rows = listByGuild({ guild_id: "g1", creator_user_id: "u1" });
+		expect(rows).toHaveLength(1);
+		expect(rows[0].id).toBe(mine.id);
+	});
+
+	it("filters by status", () => {
+		const active = createOneTimeReminder({ ...BASE, scheduled_at_utc: FUTURE });
+		const gone = createOneTimeReminder({ ...BASE, scheduled_at_utc: FUTURE });
+		cancel(gone.id, BASE.creator_user_id);
+
+		const rows = listByGuild({ guild_id: "g1", status: "scheduled" });
+		expect(rows.map((r) => r.id)).toEqual([active.id]);
+		expect(listByGuild({ guild_id: "g1" })).toHaveLength(2);
+	});
+
+	it("respects the limit", () => {
+		createOneTimeReminder({ ...BASE, scheduled_at_utc: FUTURE });
+		createOneTimeReminder({ ...BASE, scheduled_at_utc: NEXT_FUTURE });
+
+		expect(listByGuild({ guild_id: "g1", limit: 1 })).toHaveLength(1);
+	});
+
+	it("returns an empty array when nothing matches", () => {
+		expect(listByGuild({ guild_id: "nope" })).toEqual([]);
+	});
+});
+
+// ── remove ────────────────────────────────────────────────────────────────────
+
+describe("remove", () => {
+	it("deletes the row and returns true", () => {
+		const r = createOneTimeReminder({ ...BASE, scheduled_at_utc: FUTURE });
+		expect(remove(r.id, "g1")).toBe(true);
+		expect(getById(r.id)).toBeNull();
+	});
+
+	it("does not delete a reminder belonging to another guild", () => {
+		const r = createOneTimeReminder({ ...BASE, scheduled_at_utc: FUTURE });
+		expect(remove(r.id, "g2")).toBe(false);
+		expect(getById(r.id)).not.toBeNull();
+	});
+
+	it("returns false for an unknown id", () => {
+		expect(remove(9999, "g1")).toBe(false);
+	});
+
+	it("deletes recurring reminders too, removing them from getDueRecurring", () => {
+		const r = createRecurringReminder({
+			...BASE,
+			recurrence: WEEKLY_REC,
+			next_run_at_utc: PAST,
+		});
+		expect(remove(r.id, "g1")).toBe(true);
+		expect(getDueRecurring(0)).toHaveLength(0);
 	});
 });
 
